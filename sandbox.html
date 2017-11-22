@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            font-size: 16px;
+            line-height: 24px; /* Consistent line height */
+            /* Don't change font size on rotation */
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script>
+        // @ts-check
+        'use strict';
+
+        /** Handle a message posed from the parent
+         * @param event postMessage event result. */
+        function receiveMessage(event) {
+            // Only consider messages posted from the parent
+            if (event.source === parent) {
+                // Special command to set the intital HTML
+                if (event.data.command === 'html')
+                    document.getElementById('content').innerHTML = event.data.content;
+                else
+                    // Execute the editor-mode command
+                    // See https://codepen.io/netsi1964/pen/QbLLGW
+                    document.execCommand(event.data.command, true, event.data.content);
+            }
+        }
+
+        // Listen for post message events
+        window.addEventListener('message', receiveMessage, false);
+
+        /** Handle a user input on on the contenteditable body
+         * @param event input event result. */
+        function bodyInputChanged(event) {
+            parent.postMessage({ html: document.getElementById('content').innerHTML }, window.location.origin);
+        }
+
+        // On ready hook up the input event
+        document.addEventListener('DOMContentLoaded', e => {
+            document.getElementById('content').addEventListener('input', bodyInputChanged, false);
+        });
+    </script>
+</head>
+<body id="content" contenteditable="true"></body>
+</html>
