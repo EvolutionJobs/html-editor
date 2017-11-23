@@ -27,12 +27,12 @@ So when a _Bold_ command is executed the wrapper component uses `postMessage` to
 
 Include the script in your page:
 
-    <script type="module" src="{path}/html-editor.js"></script>
+    <script type="module" src="{path}/sandbox-editor.js"></script>
     
 Include the tag in your HTML:
 
-    <html-editor content={{HTML content to edit}}>
+    <sandbox-editor content={{HTML content to edit}}>
          Custom toolbar buttons here
-    </html-editor>
+    </sandbox-editor>
     
 The `content` attribute (it can also be set as a property) holds the HTML to set. `content-changed` fires when the user updates the HTML. This is compatible with [Polymer's `notify` properties](https://www.polymer-project.org/2.0/docs/devguide/properties), so you can use its two-way binding.
