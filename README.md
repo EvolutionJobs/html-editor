@@ -17,7 +17,7 @@ Unfortunately those rule out every HTML editor component I've been able to find.
 
 Like most HTML editors this uses `contenteditable` on the body of a new page in an `<iframe>` and [`document.execCommand`](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand) to provide functions like _Bold_ and _Italic_.
 
-Where this differs is that the `<iframe>` is flagged with the `sandbox="allow-scripts"` attribute. This allows scripts to run inside the `<iframe>`, but in their own unique origin - they can't execute anything in the context of the page that contains it, they can't POST, they can't resend cookies (no CSRF) and they
+Where this differs is that the `<iframe>` is flagged with the [`sandbox="allow-scripts"`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe) attribute. This allows scripts to run inside the `<iframe>`, but in their own unique origin - they can't execute anything in the context of the page that contains it, they can't POST, they can't resend cookies (no CSRF) and they
 
 Scripts are allowed to run, but appear as a different origin, cannot POST, cannot open dialogs or run anything outside of the frame.
 
