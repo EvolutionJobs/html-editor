@@ -1,0 +1,226 @@
+﻿<link rel="import" href="node_modules/@polymer/polymer/polymer-element.html">
+<link rel="import" href="node_modules/@polymer/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="node_modules/@polymer/iron-icons/editor-icons.html">
+<link rel="import" href="node_modules/@polymer/paper-icon-button/paper-icon-button.html">
+
+<script type="module" src="sandbox-editor.js">
+</script>
+<dom-module id="html-editor">
+    <template>
+        <style>
+            :host {
+                --swatch-colour-size: 20px;
+            }
+
+            paper-icon-button {
+                width: 24px;
+                height: 24px;
+                padding: 3px;
+            }
+
+            sandbox-editor {
+                width: 100%;
+                height: 100%;
+            }
+
+            paper-swatch-picker {
+                width: 24px;
+                height: 24px;
+                padding: -8px;
+                --paper-swatch-picker-icon-size: 12px;
+            }
+
+            paper-menu-button {
+                padding: 0;
+            }
+
+            .colour-swatch {
+                padding: 0;
+                display: grid;
+                grid-template-columns: repeat(18, var(--swatch-colour-size, 20px));
+                grid-template-rows: repeat(10, var(--swatch-colour-size, 20px));
+                font-size: 0;
+                line-height: 0;
+                overflow: hidden;
+            }
+
+            paper-item {
+                margin: 0;
+                padding: 0;
+                min-height: 0;
+                --paper-item-focused-before: {
+                  opacity: 0;
+                };
+            }
+
+            /* If we just scale the paper-item when hovering, this will end up
+            * adding scrollbars to the paper-listbox that are hard to get rid of.
+            * An easy workaround is to use an :after pseudo element instead. */
+
+            .colour {
+                box-sizing: border-box;
+                width: var(--swatch-colour-size, 20px);
+                height: var(--swatch-colour-size, 20px);
+                display: inline-block;
+                padding: 0;
+                margin: 0;
+                cursor: pointer;
+                font-size: 0;
+                position: relative;
+            }
+
+                .colour:after {
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    bottom: 0;
+                    left: 0;
+                    background: currentColor;
+                    content: '';
+                    -webkit-transition: -webkit-transform 0.2s;
+                    transition: transform .2s;
+                    z-index: 0;
+                }
+
+                .colour:hover:after,
+                .colour:focus:after {
+                    -webkit-transform: scale(1.3, 1.3);
+                    transform: scale(1.3, 1.3);
+                    outline: none;
+                    z-index: 1;
+                }
+        </style>
+
+
+        <sandbox-editor id="sandbox" content={{content}}>
+            <paper-icon-button icon="undo" editor-command="undo" on-tap="fireAction" title="Undo"></paper-icon-button>
+            <paper-icon-button icon="redo" editor-command="redo" on-tap="fireAction" title="Redo"></paper-icon-button>
+            |
+            <paper-icon-button icon="editor:format-bold" editor-command="bold" on-tap="fireAction" title="Bold"></paper-icon-button>
+            <paper-icon-button icon="editor:format-italic" editor-command="italic" on-tap="fireAction" title="Italic"></paper-icon-button>
+            <paper-icon-button icon="editor:format-underlined" editor-command="underline" on-tap="fireAction" title="Underline"></paper-icon-button>
+            <paper-icon-button icon="editor:format-clear" editor-command="removeFormat" on-tap="fireAction" title="Clear formatting"></paper-icon-button>
+            |
+            <paper-icon-button icon="editor:format-list-bulleted" editor-command="insertUnorderedList" on-tap="fireAction" title="Bullet points"></paper-icon-button>
+            <paper-icon-button icon="editor:format-list-numbered" editor-command="insertOrderedList" on-tap="fireAction" title="Numbered list"></paper-icon-button>
+            |
+            <paper-icon-button icon="editor:format-indent-decrease" editor-command="outdent" on-tap="fireAction" title="Decrease indent"></paper-icon-button>
+            <paper-icon-button icon="editor:format-indent-increase" editor-command="indent" on-tap="fireAction" title="Increase indent"></paper-icon-button>
+            |
+            <paper-icon-button icon="editor:format-align-center" editor-command="justifyCenter" on-tap="fireAction" title="Align centre"></paper-icon-button>
+            <paper-icon-button icon="editor:format-align-justify" editor-command="justifyFull" on-tap="fireAction" title="Full justify"></paper-icon-button>
+            <paper-icon-button icon="editor:format-align-left" editor-command="justifyLeft" on-tap="fireAction" title="Align left"></paper-icon-button>
+            <paper-icon-button icon="editor:format-align-right" editor-command="justifyRight" on-tap="fireAction" title="Align right"></paper-icon-button>
+            |
+            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="initColours">
+                <paper-icon-button icon="editor:format-color-text" slot="dropdown-trigger" editor-command="foreColor" title="Font colour"></paper-icon-button>
+                <paper-listbox slot="dropdown-content" class="dropdown-content colour-swatch" attr-for-selected="colour" on-selected-changed="setForeColour">
+                    <template is="dom-repeat" items="{{colours}}" as="colour">
+                        <paper-item class="colour" colour$="[[colour]]">{{colour}}</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-menu-button>
+
+            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="initColours">
+                <paper-icon-button icon="editor:format-color-fill" slot="dropdown-trigger" editor-command="backColor" title="Background colour"></paper-icon-button>
+                <paper-listbox slot="dropdown-content" class="dropdown-content colour-swatch" attr-for-selected="colour" on-selected-changed="setBackColour">
+                    <template is="dom-repeat" items="{{colours}}" as="colour">
+                        <paper-item class="colour" colour$="[[colour]]">{{colour}}</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-menu-button>
+
+        </sandbox-editor>
+    </template>
+
+    <script>
+        // @ts-check
+
+        // The list of material design colours from https://github.com/PolymerElements/paper-swatch-picker/blob/master/paper-swatch-picker.html
+        // This goes down, then across, but we need across then down for the grid layout
+        //  const materialDesignColours1 = [
+        //      '#ffebee', '#ffcdd2', '#ef9a9a', '#e57373', '#ef5350', '#f44336', '#e53935', '#d32f2f', '#c62828', '#b71c1c',
+        //      '#fce4ec', '#f8bbd0', '#f48fb1', '#f06292', '#ec407a', '#e91e63', '#d81b60', '#c2185b', '#ad1457', '#880e4f',
+        //      '#f3e5f5', '#e1bee7', '#ce93d8', '#ba68c8', '#ab47bc', '#9c27b0', '#8e24aa', '#7b1fa2', '#6a1b9a', '#4a148c',
+        //      '#ede7f6', '#d1c4e9', '#b39ddb', '#9575cd', '#7e57c2', '#673ab7', '#5e35b1', '#512da8', '#4527a0', '#311b92',
+        //      '#e8eaf6', '#c5cae9', '#9fa8da', '#7986cb', '#5c6bc0', '#3f51b5', '#3949ab', '#303f9f', '#283593', '#1a237e',
+        //      '#e3f2fd', '#bbdefb', '#90caf9', '#64b5f6', '#42a5f5', '#2196f3', '#1e88e5', '#1976d2', '#1565c0', '#0d47a1',
+        //      '#e1f5fe', '#b3e5fc', '#81d4fa', '#4fc3f7', '#29b6f6', '#03a9f4', '#039be5', '#0288d1', '#0277bd', '#01579b',
+        //      '#e0f7fa', '#b2ebf2', '#80deea', '#4dd0e1', '#26c6da', '#00bcd4', '#00acc1', '#0097a7', '#00838f', '#006064',
+        //      '#e0f2f1', '#b2dfdb', '#80cbc4', '#4db6ac', '#26a69a', '#009688', '#00897b', '#00796b', '#00695c', '#004d40',
+        //      '#e8f5e9', '#c8e6c9', '#a5d6a7', '#81c784', '#66bb6a', '#4caf50', '#43a047', '#388e3c', '#2e7d32', '#1b5e20',
+        //      '#f1f8e9', '#dcedc8', '#c5e1a5', '#aed581', '#9ccc65', '#8bc34a', '#7cb342', '#689f38', '#558b2f', '#33691e',
+        //      '#f9fbe7', '#f0f4c3', '#e6ee9c', '#dce775', '#d4e157', '#cddc39', '#c0ca33', '#afb42b', '#9e9d24', '#827717',
+        //      '#fffde7', '#fff9c4', '#fff59d', '#fff176', '#ffee58', '#ffeb3b', '#fdd835', '#fbc02d', '#f9a825', '#f57f17',
+        //      '#fff8e1', '#ffecb3', '#ffe082', '#ffd54f', '#ffca28', '#ffc107', '#ffb300', '#ffa000', '#ff8f00', '#ff6f00',
+        //      '#fff3e0', '#ffe0b2', '#ffcc80', '#ffb74d', '#ffa726', '#ff9800', '#fb8c00', '#f57c00', '#ef6c00', '#e65100',
+        //      '#fbe9e7', '#ffccbc', '#ffab91', '#ff8a65', '#ff7043', '#ff5722', '#f4511e', '#e64a19', '#d84315', '#bf360c',
+        //      '#efebe9', '#d7ccc8', '#bcaaa4', '#a1887f', '#8d6e63', '#795548', '#6d4c41', '#5d4037', '#4e342e', '#3e2723',
+        //      '#fafafa', '#f5f5f5', '#eeeeee', '#e0e0e0', '#bdbdbd', '#9e9e9e', '#757575', '#616161', '#424242', '#212121'
+        //  ];
+        //
+        // This function swaps then round
+        //  let x = [];
+        //  for (let i = 0; i < 10; i++) // For each column
+        //      for (let j = 0; j < 18; j++) // For each row
+        //          x.push(materialDesignColours1[i + j * 10]); // Add to result
+
+        const materialDesignColours = [
+            '#ffebee', '#fce4ec', '#f3e5f5', '#ede7f6', '#e8eaf6', '#e3f2fd', '#e1f5fe', '#e0f7fa', '#e0f2f1', '#e8f5e9', '#f1f8e9', '#f9fbe7', '#fffde7', '#fff8e1', '#fff3e0', '#fbe9e7', '#efebe9', '#fafafa',
+            '#ffcdd2', '#f8bbd0', '#e1bee7', '#d1c4e9', '#c5cae9', '#bbdefb', '#b3e5fc', '#b2ebf2', '#b2dfdb', '#c8e6c9', '#dcedc8', '#f0f4c3', '#fff9c4', '#ffecb3', '#ffe0b2', '#ffccbc', '#d7ccc8', '#f5f5f5',
+            '#ef9a9a', '#f48fb1', '#ce93d8', '#b39ddb', '#9fa8da', '#90caf9', '#81d4fa', '#80deea', '#80cbc4', '#a5d6a7', '#c5e1a5', '#e6ee9c', '#fff59d', '#ffe082', '#ffcc80', '#ffab91', '#bcaaa4', '#eeeeee',
+            '#e57373', '#f06292', '#ba68c8', '#9575cd', '#7986cb', '#64b5f6', '#4fc3f7', '#4dd0e1', '#4db6ac', '#81c784', '#aed581', '#dce775', '#fff176', '#ffd54f', '#ffb74d', '#ff8a65', '#a1887f', '#e0e0e0',
+            '#ef5350', '#ec407a', '#ab47bc', '#7e57c2', '#5c6bc0', '#42a5f5', '#29b6f6', '#26c6da', '#26a69a', '#66bb6a', '#9ccc65', '#d4e157', '#ffee58', '#ffca28', '#ffa726', '#ff7043', '#8d6e63', '#bdbdbd',
+            '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e',
+            '#e53935', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab', '#1e88e5', '#039be5', '#00acc1', '#00897b', '#43a047', '#7cb342', '#c0ca33', '#fdd835', '#ffb300', '#fb8c00', '#f4511e', '#6d4c41', '#757575',
+            '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#afb42b', '#fbc02d', '#ffa000', '#f57c00', '#e64a19', '#5d4037', '#616161',
+            '#c62828', '#ad1457', '#6a1b9a', '#4527a0', '#283593', '#1565c0', '#0277bd', '#00838f', '#00695c', '#2e7d32', '#558b2f', '#9e9d24', '#f9a825', '#ff8f00', '#ef6c00', '#d84315', '#4e342e', '#424242',
+            '#b71c1c', '#880e4f', '#4a148c', '#311b92', '#1a237e', '#0d47a1', '#01579b', '#006064', '#004d40', '#1b5e20', '#33691e', '#827717', '#f57f17', '#ff6f00', '#e65100', '#bf360c', '#3e2723', '#212121'
+        ];
+
+        class HtmlEditor extends Polymer.Element {
+            static get is() { return 'html-editor'; }
+            static get properties() {
+                return {
+                    content: { type: String, notify: true },
+                    colours: { type: Array, value: materialDesignColours }
+                    //foreColour: { type: String, observer: 'setForeColour' },
+                    //backColour: { type: String, observer: 'setBackColour' }
+                }
+            }
+
+            setForeColour(e) {
+                const colour = e.currentTarget.selected; 
+                e.currentTarget.parentElement.style.color = colour;
+                this.$.sandbox.editorAction('foreColor', colour);
+            }
+
+            setBackColour(e) {
+                const colour = e.currentTarget.selected;
+                e.currentTarget.parentElement.style.color = colour;
+                this.$.sandbox.editorAction('backColor', colour);
+            }
+
+            initColours(e) {
+                
+                // Fill in the colors if we haven't already.
+                if (e.currentTarget._renderedColors)
+                    return;
+
+                const colourItems = e.currentTarget.querySelectorAll('.colour');
+
+                for (var i = 0; i < colourItems.length; i++)
+                    colourItems[i].style.color = colourItems[i].innerHTML;
+
+                e.currentTarget._renderedColors = true;
+            }
+
+            fireAction(e) {
+                const command = e.currentTarget.getAttribute('editor-command');
+                this.$.sandbox.editorAction(command);
+            }
+        }
+
+        customElements.define(HtmlEditor.is, HtmlEditor);
+    </script>
+</dom-module>

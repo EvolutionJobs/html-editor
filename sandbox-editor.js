@@ -1,7 +1,7 @@
 const stack = (new Error().stack || '').split('at');
 const scriptPath = stack[stack.length - 1].trim();
 const componentPath = scriptPath.substring(0, scriptPath.lastIndexOf('/'));
-export class HtmlEditor extends HTMLElement {
+export class SandboxEditor extends HTMLElement {
     get content() { return this._content; }
     ;
     set content(c) {
@@ -22,8 +22,8 @@ export class HtmlEditor extends HTMLElement {
             this.editor.contentWindow.focus();
         return true;
     }
-    editorAction(action) {
-        this.sendCommand(action, true);
+    editorAction(action, value) {
+        this.sendCommand(action, true, value);
     }
     receiveMessage(event) {
         if (this.editor && event.source === this.editor.contentWindow) {
@@ -57,34 +57,11 @@ iframe {
     color: var(--html-editor-colour, #000);
     padding: .5em;
     box-shadow: rgba(0, 0, 0, 0.14) 0px -2px 2px 0px, rgba(0, 0, 0, 0.12) 0px -1px 5px 0px, rgba(0, 0, 0, 0.2) 0px -3px 1px -2px;
-}
-
-/* Override lots of <button> weirdness back to defaults */
-button {
-    position: relative;
-    display: inline-block;
-    margin: 0;
-    padding: 0 .5em;
-    text-align: left;
-    outline-width: 0;
-    border: 0;
-    background: none;
-    font-family: var(--font-main);
-    font-size: 1rem;
-    color: var(--html-editor-colour, #000);
-    cursor: pointer;
 }`;
         root.appendChild(style);
         const toolbar = document.createElement('div');
         toolbar.id = 'toolbar';
         root.appendChild(toolbar);
-        for (const b of HtmlEditor.buttons) {
-            const button = document.createElement('button');
-            button.id = b.action;
-            button.innerText = b.text;
-            button.addEventListener('click', e => this.sendCommand(b.action, true));
-            toolbar.appendChild(button);
-        }
         const slot = document.createElement('slot');
         toolbar.appendChild(slot);
         this.editor = document.createElement('iframe');
@@ -97,18 +74,4 @@ button {
             this.sendCommand('html', false, this._content);
     }
 }
-HtmlEditor.buttons = [
-    { action: 'undo', text: 'undo' },
-    { action: 'bold', text: 'B' },
-    { action: 'italic', text: 'I' },
-    { action: 'underline', text: 'U' },
-    { action: 'insertOrderedList', text: 'OL' },
-    { action: 'insertUnorderedList', text: 'UL' },
-    { action: 'indent', text: '>' },
-    { action: 'outdent', text: '<' },
-    { action: 'justifyCenter', text: 'center' },
-    { action: 'justifyFull', text: 'justify' },
-    { action: 'justifyLeft', text: 'left' },
-    { action: 'justifyRight', text: 'right' }
-];
-customElements.define('html-editor', HtmlEditor);
+customElements.define('sandbox-editor', SandboxEditor);

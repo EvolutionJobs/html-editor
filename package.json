@@ -1,0 +1,21 @@
+{
+  "name": "html-editor",
+  "flat": true,
+  "version": "1.0.0",
+  "description": "Sandboxed HTML editor",
+  "main": "html-editor.html",
+  "repository": "https://github.com/EvolutionJobs/html-editor.git",
+  "author": "KeithHenry <keith.henry@evolutionjobs.co.uk>",
+  "license": "MIT",
+  "dependencies": {
+    "@polymer/iron-icons": "^0.0.3",
+    "@polymer/paper-icon-button": "^0.0.3",
+    "@polymer/paper-item": "^0.0.3",
+    "@polymer/paper-listbox": "^0.0.3",
+    "@polymer/paper-menu-button": "^0.0.3",
+    "@polymer/polymer": "^2.2.0"
+  },
+  "resolutions": {
+    "@polymer/polymer": "2.2.0"
+  }
+}
