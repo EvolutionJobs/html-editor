@@ -1,4 +1,4 @@
-﻿const stack = (new Error().stack || '').split('at'); // Get the current script path https://stackoverflow.com/questions/47437878/get-the-path-to-the-current-js-web-component
+const stack = (new Error().stack || '').split('at'); // Get the current script path https://stackoverflow.com/questions/47437878/get-the-path-to-the-current-js-web-component
 const scriptPath = stack[stack.length - 1].trim();
 const componentPath = scriptPath.substring(0, scriptPath.lastIndexOf('/'));
 
@@ -14,8 +14,8 @@ interface PostMessageEvent {
     source: Window;
 }
 
-/** Bare bones HTML content editor that uses a sandboxed iframe to protect users */
-export class HtmlEditor extends HTMLElement {
+/** Bare bones HTML content editor that uses a sandboxed iframe to protect users. */
+export class SandboxEditor extends HTMLElement {
 
     /** Holds the content sent to the sandboxed iframe. */
     private _content: string;
@@ -58,25 +58,11 @@ export class HtmlEditor extends HTMLElement {
     }
 
     /** Execute an editor action against the sandboxed content.
-     * @param action Name of action from https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand */
-    editorAction(action: string) {
-        this.sendCommand(action, true);
+     * @param action Name of action from https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand
+     * @param value Optional value to set with the command. */
+    editorAction(action: string, value?: string) {
+        this.sendCommand(action, true, value);
     }
-
-    private static readonly buttons: { action: string, text: string }[] = [
-        { action: 'undo', text: 'undo' },
-        { action: 'bold', text: 'B' },
-        { action: 'italic', text: 'I' },
-        { action: 'underline', text: 'U' },
-        { action: 'insertOrderedList', text: 'OL' },
-        { action: 'insertUnorderedList', text: 'UL' },
-        { action: 'indent', text: '>' },
-        { action: 'outdent', text: '<' },
-        { action: 'justifyCenter', text: 'center' },
-        { action: 'justifyFull', text: 'justify' },
-        { action: 'justifyLeft', text: 'left' },
-        { action: 'justifyRight', text: 'right' }
-    ];
 
     /** When a message is received and the event source is the editor iframe then sync the content and fire the notification event. 
      * @param event The event holding the message details. */
@@ -117,22 +103,6 @@ iframe {
     color: var(--html-editor-colour, #000);
     padding: .5em;
     box-shadow: rgba(0, 0, 0, 0.14) 0px -2px 2px 0px, rgba(0, 0, 0, 0.12) 0px -1px 5px 0px, rgba(0, 0, 0, 0.2) 0px -3px 1px -2px;
-}
-
-/* Override lots of <button> weirdness back to defaults */
-button {
-    position: relative;
-    display: inline-block;
-    margin: 0;
-    padding: 0 .5em;
-    text-align: left;
-    outline-width: 0;
-    border: 0;
-    background: none;
-    font-family: var(--font-main);
-    font-size: 1rem;
-    color: var(--html-editor-colour, #000);
-    cursor: pointer;
 }`;
         root.appendChild(style);
 
@@ -140,16 +110,11 @@ button {
         toolbar.id = 'toolbar';
         root.appendChild(toolbar);
 
-        for (const b of HtmlEditor.buttons) {
-            const button = document.createElement('button');
-            button.id = b.action;
-            button.innerText = b.text;
-            button.addEventListener('click', e => this.sendCommand(b.action, true));
-            toolbar.appendChild(button);
-        }
-
         const slot = document.createElement('slot');
         toolbar.appendChild(slot);
+
+        //// This can be predicted and shouldn't be co
+        //this.eventId = Math.random().toString(36).replace(/[^a-z]+/g, '');
 
         this.editor = document.createElement('iframe');
         this.editor.id = 'editor';
@@ -169,4 +134,4 @@ button {
     }
 }
 
-customElements.define('html-editor', HtmlEditor);
+customElements.define('sandbox-editor', SandboxEditor);
