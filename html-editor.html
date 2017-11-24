@@ -3,11 +3,8 @@
 <link rel="import" href="node_modules/@polymer/iron-icons/editor-icons.html">
 <link rel="import" href="node_modules/@polymer/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="node_modules/@polymer/paper-menu-button/paper-menu-button.html">
-<link rel="import" href="node_modules/@polymer/paper-listbox/paper-listbox.html">
-<link rel="import" href="node_modules/@polymer/paper-item/paper-item.html">
 
-<script type="module" src="sandbox-editor.js">
-</script>
+<script type="module" src="sandbox-editor.js"></script>
 <dom-module id="html-editor">
     <template>
         <style>
@@ -23,7 +20,7 @@
 
             sandbox-editor {
                 width: 100%;
-                height: 100%;
+                height: calc(100% - 20px);
             }
 
             paper-swatch-picker {
@@ -42,6 +39,8 @@
                 display: grid;
                 grid-template-columns: repeat(18, var(--swatch-colour-size, 20px));
                 grid-template-rows: repeat(10, var(--swatch-colour-size, 20px));
+                width: calc(18 * var(--swatch-colour-size, 20px));
+                height: calc(10 * var(--swatch-colour-size, 20px));
                 font-size: 0;
                 line-height: 0;
                 overflow: hidden;
@@ -59,6 +58,7 @@
             /* If we just scale the paper-item when hovering, this will end up
             * adding scrollbars to the paper-listbox that are hard to get rid of.
             * An easy workaround is to use an :after pseudo element instead. */
+
             .colour {
                 box-sizing: border-box;
                 width: var(--swatch-colour-size, 20px);
@@ -69,6 +69,7 @@
                 cursor: pointer;
                 font-size: 0;
                 position: relative;
+                background-color: currentColor;
             }
 
                 .colour:after {
@@ -91,48 +92,92 @@
                     outline: none;
                     z-index: 1;
                 }
+
+
+            .underline {
+                height: 2px;
+                position: relative;
+            }
+
+                .underline > .focused-line {
+                    @apply --layout-fit;
+                    border-bottom: 2px solid var(--paper-input-container-focus-color, var(--primary-color));
+                    -webkit-transform-origin: center center;
+                    transform-origin: center center;
+                    -webkit-transform: scale3d(0,1,1);
+                    transform: scale3d(0,1,1);
+
+                    @apply --paper-input-container-underline-focus;
+                }
+
+                .underline[focused] > .focused-line {
+                    -webkit-transform: none;
+                    transform: none;
+                    -webkit-transition: -webkit-transform 0.25s;
+                    transition: transform 0.25s;
+
+                    @apply --paper-transition-easing;
+                }
+
+                .underline > .unfocused-line {
+                    @apply --layout-fit;
+                    border-bottom: 1px solid var(--paper-input-container-color, var(--secondary-text-color));
+                    @apply --paper-input-container-underline;
+                }
+
+            label {
+                font-size: 12px;
+                line-height: 20px;
+                height: 20px;
+            }
         </style>
 
+        <label hidden$="[[!label]]" aria-hidden="true" for="sandbox" slot="label">[[label]]</label>
 
-        <sandbox-editor id="sandbox" content={{content}}>
-            <paper-icon-button icon="undo" editor-command="undo" on-tap="fireAction" title="Undo"></paper-icon-button>
-            <paper-icon-button icon="redo" editor-command="redo" on-tap="fireAction" title="Redo"></paper-icon-button>
+        <sandbox-editor id="sandbox" content={{value}} slot="input" on-focused-changed="_focusChanged">
+            <paper-icon-button icon="undo" editor-command="undo" on-tap="_fireAction" title="Undo"></paper-icon-button>
+            <paper-icon-button icon="redo" editor-command="redo" on-tap="_fireAction" title="Redo"></paper-icon-button>
             |
-            <paper-icon-button icon="editor:format-bold" editor-command="bold" on-tap="fireAction" title="Bold"></paper-icon-button>
-            <paper-icon-button icon="editor:format-italic" editor-command="italic" on-tap="fireAction" title="Italic"></paper-icon-button>
-            <paper-icon-button icon="editor:format-underlined" editor-command="underline" on-tap="fireAction" title="Underline"></paper-icon-button>
-            <paper-icon-button icon="editor:format-clear" editor-command="removeFormat" on-tap="fireAction" title="Clear formatting"></paper-icon-button>
+            <paper-icon-button icon="editor:format-bold" editor-command="bold" on-tap="_fireAction" title="Bold"></paper-icon-button>
+            <paper-icon-button icon="editor:format-italic" editor-command="italic" on-tap="_fireAction" title="Italic"></paper-icon-button>
+            <paper-icon-button icon="editor:format-underlined" editor-command="underline" on-tap="_fireAction" title="Underline"></paper-icon-button>
+            <paper-icon-button icon="editor:format-clear" editor-command="removeFormat" on-tap="_fireAction" title="Clear formatting"></paper-icon-button>
             |
-            <paper-icon-button icon="editor:format-list-bulleted" editor-command="insertUnorderedList" on-tap="fireAction" title="Bullet points"></paper-icon-button>
-            <paper-icon-button icon="editor:format-list-numbered" editor-command="insertOrderedList" on-tap="fireAction" title="Numbered list"></paper-icon-button>
+            <paper-icon-button icon="editor:format-list-bulleted" editor-command="insertUnorderedList" on-tap="_fireAction" title="Bullet points"></paper-icon-button>
+            <paper-icon-button icon="editor:format-list-numbered" editor-command="insertOrderedList" on-tap="_fireAction" title="Numbered list"></paper-icon-button>
             |
-            <paper-icon-button icon="editor:format-indent-decrease" editor-command="outdent" on-tap="fireAction" title="Decrease indent"></paper-icon-button>
-            <paper-icon-button icon="editor:format-indent-increase" editor-command="indent" on-tap="fireAction" title="Increase indent"></paper-icon-button>
+            <paper-icon-button icon="editor:format-indent-decrease" editor-command="outdent" on-tap="_fireAction" title="Decrease indent"></paper-icon-button>
+            <paper-icon-button icon="editor:format-indent-increase" editor-command="indent" on-tap="_fireAction" title="Increase indent"></paper-icon-button>
             |
-            <paper-icon-button icon="editor:format-align-center" editor-command="justifyCenter" on-tap="fireAction" title="Align centre"></paper-icon-button>
-            <paper-icon-button icon="editor:format-align-justify" editor-command="justifyFull" on-tap="fireAction" title="Full justify"></paper-icon-button>
-            <paper-icon-button icon="editor:format-align-left" editor-command="justifyLeft" on-tap="fireAction" title="Align left"></paper-icon-button>
-            <paper-icon-button icon="editor:format-align-right" editor-command="justifyRight" on-tap="fireAction" title="Align right"></paper-icon-button>
+            <paper-icon-button icon="editor:format-align-center" editor-command="justifyCenter" on-tap="_fireAction" title="Align centre"></paper-icon-button>
+            <paper-icon-button icon="editor:format-align-justify" editor-command="justifyFull" on-tap="_fireAction" title="Full justify"></paper-icon-button>
+            <paper-icon-button icon="editor:format-align-left" editor-command="justifyLeft" on-tap="_fireAction" title="Align left"></paper-icon-button>
+            <paper-icon-button icon="editor:format-align-right" editor-command="justifyRight" on-tap="_fireAction" title="Align right"></paper-icon-button>
             |
-            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="initColours">
+            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="_initColours">
                 <paper-icon-button icon="editor:format-color-text" slot="dropdown-trigger" editor-command="foreColor" title="Font colour"></paper-icon-button>
-                <paper-listbox slot="dropdown-content" class="dropdown-content colour-swatch" attr-for-selected="colour" on-selected-changed="setForeColour">
+                <div slot="dropdown-content" class="dropdown-content colour-swatch">
                     <template is="dom-repeat" items="{{colours}}" as="colour">
-                        <paper-item class="colour" colour$="[[colour]]">{{colour}}</paper-item>
+                        <span class="colour" on-tap="_setForeColour">{{colour}}</span>
                     </template>
-                </paper-listbox>
+                </div>
             </paper-menu-button>
-
-            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="initColours">
+            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="_initColours">
                 <paper-icon-button icon="editor:format-color-fill" slot="dropdown-trigger" editor-command="backColor" title="Background colour"></paper-icon-button>
-                <paper-listbox slot="dropdown-content" class="dropdown-content colour-swatch" attr-for-selected="colour" on-selected-changed="setBackColour">
+                <div slot="dropdown-content" class="dropdown-content colour-swatch">
                     <template is="dom-repeat" items="{{colours}}" as="colour">
-                        <paper-item class="colour" colour$="[[colour]]">{{colour}}</paper-item>
+                        <span class="colour" on-tap="_setBackColour">{{colour}}</span>
                     </template>
-                </paper-listbox>
+                </div>
             </paper-menu-button>
 
         </sandbox-editor>
+
+        <div class="underline" focused$=[[focused]]>
+            <div class="unfocused-line"></div>
+            <div class="focused-line"></div>
+        </div>
+
     </template>
 
     <script>
@@ -156,38 +201,68 @@
             static get is() { return 'html-editor'; }
             static get properties() {
                 return {
-                    content: { type: String, notify: true },
-                    colours: { type: Array, value: materialDesignColours }
+                    value: { type: String, notify: true },
+                    colours: { type: Array, value: materialDesignColours },
+                    label: String,
+                    focused: { type: Boolean, value: false, observer: '_focusChanged' }
                 }
             }
 
-            setForeColour(e) {
-                const colour = e.currentTarget.selected; 
-                e.currentTarget.parentElement.style.color = colour;
-                this.$.sandbox.editorAction('foreColor', colour);
+            _focusChanged(e) {
+                if (!e.detail)
+                    return;
+
+                if (e.detail.value) {
+                    this.focused = true;
+
+                    // When focusing on the editor pane close any overlay menus
+                    for (const menu of this.shadowRoot.querySelectorAll('paper-menu-button'))
+                        menu.close();
+                }
+
+                // document.activeElement will return the parent light DOM, we want the element in this component
+                const newFocus = this.shadowRoot.activeElement;
+
+                // If we have a new focus in the same shadow root then we've switched sub-controls, overall focus is still on the component
+                if (newFocus)
+                    this.focused = true;
+                else
+                    // Focus has left the shadow root too, lose focus flag
+                    this.focused = false;
             }
 
-            setBackColour(e) {
-                const colour = e.currentTarget.selected;
-                e.currentTarget.parentElement.style.color = colour;
-                this.$.sandbox.editorAction('backColor', colour);
+            _setColour(target, action) {
+                const menuButton = target.parentElement.parentElement;
+                const colour = target.textContent;
+                menuButton.style.color = colour;
+                menuButton.close();
+                this.$.sandbox.editorAction(action, colour);
             }
 
-            initColours(e) {
-                
+            _setForeColour(e) {
+                this._setColour(e.currentTarget, 'foreColor');
+            }
+
+            _setBackColour(e) {
+                this._setColour(e.currentTarget, 'backColor');
+            }
+
+            _initColours(e) {
+
                 // Fill in the colors if we haven't already.
                 if (e.currentTarget._renderedColors)
                     return;
 
+                // Find all the colours selectors and set their current colour to be the content
                 const colourItems = e.currentTarget.querySelectorAll('.colour');
-
                 for (var i = 0; i < colourItems.length; i++)
-                    colourItems[i].style.color = colourItems[i].innerHTML;
+                    // Use the forecolour so that we can use the currentColor pseudo CSS variable
+                    colourItems[i].style.color = colourItems[i].textContent;
 
                 e.currentTarget._renderedColors = true;
             }
 
-            fireAction(e) {
+            _fireAction(e) {
                 const command = e.currentTarget.getAttribute('editor-command');
                 this.$.sandbox.editorAction(command);
             }

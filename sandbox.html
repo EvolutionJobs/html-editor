@@ -3,6 +3,7 @@
 <head>
     <style>
         html, body {
+            /*overflow: auto;*/
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
             font-size: 16px;
             line-height: 24px; /* Consistent line height */
@@ -35,15 +36,12 @@
         // Listen for post message events
         window.addEventListener('message', receiveMessage, false);
 
-        /** Handle a user input on on the contenteditable body
-         * @param event input event result. */
-        function bodyInputChanged(event) {
-            parent.postMessage({ html: document.getElementById('content').innerHTML }, window.location.origin);
-        }
-
         // On ready hook up the input event
         document.addEventListener('DOMContentLoaded', e => {
-            document.getElementById('content').addEventListener('input', bodyInputChanged, false);
+            const content = document.getElementById('content');
+            content.addEventListener('input', e => parent.postMessage({ html: content.innerHTML, focus: true }, window.location.origin), false);
+            content.addEventListener('focusin', e => parent.postMessage({ focus: true }, window.location.origin), false);
+            content.addEventListener('focusout', e => parent.postMessage({ focus: false }, window.location.origin), false);
         });
     </script>
 </head>

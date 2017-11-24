@@ -17,11 +17,11 @@ interface PostMessageEvent {
 /** Bare bones HTML content editor that uses a sandboxed iframe to protect users. */
 export class SandboxEditor extends HTMLElement {
 
-    /** Holds the content sent to the sandboxed iframe. */
-    private _content: string;
-
     /** Holds the sandboxed iframe with the editable content. */
     private editor: HTMLIFrameElement;
+
+    /** Holds the content sent to the sandboxed iframe. */
+    private _content: string;
 
     /** Get or set the editor content. */
     get content(): string { return this._content; };
@@ -31,6 +31,21 @@ export class SandboxEditor extends HTMLElement {
         // If we have an editor send the command to update the HTML.
         if (this.editor)
             this.sendCommand('html', false, this._content);
+    };
+
+    /** Holds whether the contained iframe has fired a focus event on the contenteditable body. */
+    private _hasFocus: boolean = false;
+
+    /** Get or set the editor content. */
+    get focused(): boolean { return this._hasFocus; };
+    set focused(f: boolean) {
+        if (this._hasFocus === f)
+            return;
+
+        this._hasFocus = f;
+
+        // Fire the notify event expected by Polymer for 2-way data binding
+        this.dispatchEvent(new CustomEvent('focused-changed', { detail: { value: this._hasFocus } }));
     };
 
     static get observedAttributes() { return ['content']; }
@@ -69,10 +84,15 @@ export class SandboxEditor extends HTMLElement {
     private receiveMessage(event: PostMessageEvent) {
         // We only care about events from our window
         if (this.editor && event.source === this.editor.contentWindow) {
-            this._content = event.data.html;
+            if ('html' in event.data) {
+                this._content = event.data.html;
 
-            // Fire the notify event expected by Polymer for 2-way data binding
-            this.dispatchEvent(new CustomEvent('content-changed', { detail: { value: this._content } }));
+                // Fire the notify event expected by Polymer for 2-way data binding
+                this.dispatchEvent(new CustomEvent('content-changed', { detail: { value: this._content } }));
+            }
+
+            if ('focus' in event.data)
+                this.focused = event.data.focus;
         }
     }
 
