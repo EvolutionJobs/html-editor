@@ -25,9 +25,16 @@ So when a _Bold_ command is executed the wrapper component uses `postMessage` to
 
 ## How do I use it?
 
+This component consists of two web components:
+
+* `<sandbox-editor>` stand alone HTML editor sandbox with no UI
+* `<html-editor>` Polymer 2 UI, which depends on HTML imports and further Polymer components.
+
+### `<sandbox-editor>`
+
 Include the script in your page:
 
-    <script type="module" src="{path}/sandbox-editor.js"></script>
+    <script type="module" src="{path}/html-editor/sandbox-editor.js"></script>
     
 Include the tag in your HTML:
 
@@ -36,3 +43,25 @@ Include the tag in your HTML:
     </sandbox-editor>
     
 The `content` attribute (it can also be set as a property) holds the HTML to set. `content-changed` fires when the user updates the HTML. This is compatible with [Polymer's `notify` properties](https://www.polymer-project.org/2.0/docs/devguide/properties), so you can use its two-way binding.
+
+To execute commands against the editor call `editorAction`:
+
+    const sandbox = parentElement.querySelector('sandbox-editor');
+    sandbox.editorAction('bold'); // make the current selection bold
+    sandbox.editorAction('backColor', '#fdb5fb'); // make the background pink
+
+For an example of this see the [source of `<html-editor>`](html-editor.html)
+
+### `<html-editor>`
+
+Include the HTML import:
+
+    <link rel="import" href="{path}/html-editor/html-editor.html" />
+
+Include the tag in your HTML:
+
+    <html-editor content={{HTML content to edit}}></html-editor>
+
+The `content` attribute (it can also be set as a property) holds the HTML to set, Polymer two-way databinding is supported.
+
+![screen shot](demo/html-editor.png)
