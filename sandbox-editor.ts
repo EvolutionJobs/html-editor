@@ -36,7 +36,7 @@ export class SandboxEditor extends HTMLElement {
     /** Holds whether the contained iframe has fired a focus event on the contenteditable body. */
     private _hasFocus: boolean = false;
 
-    /** Get or set the editor content. */
+    /** Get or set whether this has focus */
     get focused(): boolean { return this._hasFocus; };
     set focused(f: boolean) {
         if (this._hasFocus === f)
@@ -114,27 +114,8 @@ iframe {
     padding: 0; 
     width: 100%; 
     height: 100%; 
-}
-
-#toolbar {
-    position: absolute;
-    bottom: 0;
-    background-color: var(--html-editor-background-colour, #fff);
-    color: var(--html-editor-colour, #000);
-    padding: .5em;
-    box-shadow: rgba(0, 0, 0, 0.14) 0px -2px 2px 0px, rgba(0, 0, 0, 0.12) 0px -1px 5px 0px, rgba(0, 0, 0, 0.2) 0px -3px 1px -2px;
 }`;
         root.appendChild(style);
-
-        const toolbar = document.createElement('div');
-        toolbar.id = 'toolbar';
-        root.appendChild(toolbar);
-
-        const slot = document.createElement('slot');
-        toolbar.appendChild(slot);
-
-        //// This can be predicted and shouldn't be co
-        //this.eventId = Math.random().toString(36).replace(/[^a-z]+/g, '');
 
         this.editor = document.createElement('iframe');
         this.editor.id = 'editor';

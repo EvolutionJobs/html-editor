@@ -1,15 +1,21 @@
-﻿<link rel="import" href="node_modules/@polymer/polymer/polymer-element.html">
-<link rel="import" href="node_modules/@polymer/polymer/lib/elements/dom-repeat.html">
-<link rel="import" href="node_modules/@polymer/iron-icons/editor-icons.html">
-<link rel="import" href="node_modules/@polymer/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="node_modules/@polymer/paper-menu-button/paper-menu-button.html">
+﻿<link rel="import" href="../../lib/polymer/polymer-element.html">
+<link rel="import" href="../../lib/iron-icons/editor-icons.html">
+<link rel="import" href="../../lib/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../lib/paper-menu-button/paper-menu-button.html">
 
-<script type="module" src="sandbox-editor.js"></script>
+<link rel="import" href="../../lib/polymer/lib/elements/dom-if.html">
+<link rel="import" href="../../lib/polymer/lib/elements/dom-repeat.html">
+
+<script type="module" src="sandbox-editor.js">
+</script>
 <dom-module id="html-editor">
     <template>
         <style>
             :host {
-                --swatch-colour-size: 20px;
+                /*--swatch-colour-size: 20px;*/
+                display:block;
+                position: relative;
+                overflow: hidden;
             }
 
             paper-icon-button {
@@ -20,7 +26,7 @@
 
             sandbox-editor {
                 width: 100%;
-                height: calc(100% - 20px);
+                height: calc(100% - 22px); /* 20px for the label and 2px for the grow-bar */
             }
 
             paper-swatch-picker {
@@ -46,19 +52,8 @@
                 overflow: hidden;
             }
 
-            paper-item {
-                margin: 0;
-                padding: 0;
-                min-height: 0;
-                --paper-item-focused-before: {
-                  opacity: 0;
-                };
-            }
-
-            /* If we just scale the paper-item when hovering, this will end up
-            * adding scrollbars to the paper-listbox that are hard to get rid of.
-            * An easy workaround is to use an :after pseudo element instead. */
-
+            /* If we just scale the paper-item when hovering, this will end up adding scrollbars to the container that are hard to get rid of.
+             * An easy workaround is to use an :after pseudo element instead. */
             .colour {
                 box-sizing: border-box;
                 width: var(--swatch-colour-size, 20px);
@@ -130,49 +125,66 @@
                 line-height: 20px;
                 height: 20px;
             }
+
+            #toolbar {
+                position: absolute;
+                bottom: 0;
+                background-color: var(--html-editor-background-colour, #fff);
+                color: var(--html-editor-colour, #000);
+                padding: .5em;
+                box-shadow: rgba(0, 0, 0, 0.14) 0px -2px 2px 0px, rgba(0, 0, 0, 0.12) 0px -1px 5px 0px, rgba(0, 0, 0, 0.2) 0px -3px 1px -2px;
+                transform: translateY(44px);
+                transition: transform .2s ease-in-out;
+            }
+
+                #toolbar[focused] {
+                    transform: none;
+                }
         </style>
 
         <label hidden$="[[!label]]" aria-hidden="true" for="sandbox" slot="label">[[label]]</label>
 
-        <sandbox-editor id="sandbox" content={{value}} slot="input" on-focused-changed="_focusChanged">
-            <paper-icon-button icon="undo" editor-command="undo" on-tap="_fireAction" title="Undo"></paper-icon-button>
-            <paper-icon-button icon="redo" editor-command="redo" on-tap="_fireAction" title="Redo"></paper-icon-button>
-            |
-            <paper-icon-button icon="editor:format-bold" editor-command="bold" on-tap="_fireAction" title="Bold"></paper-icon-button>
-            <paper-icon-button icon="editor:format-italic" editor-command="italic" on-tap="_fireAction" title="Italic"></paper-icon-button>
-            <paper-icon-button icon="editor:format-underlined" editor-command="underline" on-tap="_fireAction" title="Underline"></paper-icon-button>
-            <paper-icon-button icon="editor:format-clear" editor-command="removeFormat" on-tap="_fireAction" title="Clear formatting"></paper-icon-button>
-            |
-            <paper-icon-button icon="editor:format-list-bulleted" editor-command="insertUnorderedList" on-tap="_fireAction" title="Bullet points"></paper-icon-button>
-            <paper-icon-button icon="editor:format-list-numbered" editor-command="insertOrderedList" on-tap="_fireAction" title="Numbered list"></paper-icon-button>
-            |
-            <paper-icon-button icon="editor:format-indent-decrease" editor-command="outdent" on-tap="_fireAction" title="Decrease indent"></paper-icon-button>
-            <paper-icon-button icon="editor:format-indent-increase" editor-command="indent" on-tap="_fireAction" title="Increase indent"></paper-icon-button>
-            |
-            <paper-icon-button icon="editor:format-align-center" editor-command="justifyCenter" on-tap="_fireAction" title="Align centre"></paper-icon-button>
-            <paper-icon-button icon="editor:format-align-justify" editor-command="justifyFull" on-tap="_fireAction" title="Full justify"></paper-icon-button>
-            <paper-icon-button icon="editor:format-align-left" editor-command="justifyLeft" on-tap="_fireAction" title="Align left"></paper-icon-button>
-            <paper-icon-button icon="editor:format-align-right" editor-command="justifyRight" on-tap="_fireAction" title="Align right"></paper-icon-button>
-            |
-            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="_initColours">
-                <paper-icon-button icon="editor:format-color-text" slot="dropdown-trigger" editor-command="foreColor" title="Font colour"></paper-icon-button>
-                <div slot="dropdown-content" class="dropdown-content colour-swatch">
-                    <template is="dom-repeat" items="{{colours}}" as="colour">
-                        <span class="colour" on-tap="_setForeColour">{{colour}}</span>
-                    </template>
-                </div>
-            </paper-menu-button>
-            <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="_initColours">
-                <paper-icon-button icon="editor:format-color-fill" slot="dropdown-trigger" editor-command="backColor" title="Background colour"></paper-icon-button>
-                <div slot="dropdown-content" class="dropdown-content colour-swatch">
-                    <template is="dom-repeat" items="{{colours}}" as="colour">
-                        <span class="colour" on-tap="_setBackColour">{{colour}}</span>
-                    </template>
-                </div>
-            </paper-menu-button>
+        <sandbox-editor id="sandbox" content={{value}} slot="input" on-focused-changed="_focusChanged"></sandbox-editor>
 
-        </sandbox-editor>
-
+        <div id="toolbar" focused$=[[focused]]>
+            <slot>
+                <paper-icon-button icon="undo" editor-command="undo" on-tap="_fireAction" title="Undo"></paper-icon-button>
+                <paper-icon-button icon="redo" editor-command="redo" on-tap="_fireAction" title="Redo"></paper-icon-button>
+                |
+                <paper-icon-button icon="editor:format-bold" editor-command="bold" on-tap="_fireAction" title="Bold"></paper-icon-button>
+                <paper-icon-button icon="editor:format-italic" editor-command="italic" on-tap="_fireAction" title="Italic"></paper-icon-button>
+                <paper-icon-button icon="editor:format-underlined" editor-command="underline" on-tap="_fireAction" title="Underline"></paper-icon-button>
+                <paper-icon-button icon="editor:format-clear" editor-command="removeFormat" on-tap="_fireAction" title="Clear formatting"></paper-icon-button>
+                |
+                <paper-icon-button icon="editor:format-list-bulleted" editor-command="insertUnorderedList" on-tap="_fireAction" title="Bullet points"></paper-icon-button>
+                <paper-icon-button icon="editor:format-list-numbered" editor-command="insertOrderedList" on-tap="_fireAction" title="Numbered list"></paper-icon-button>
+                |
+                <paper-icon-button icon="editor:format-indent-decrease" editor-command="outdent" on-tap="_fireAction" title="Decrease indent"></paper-icon-button>
+                <paper-icon-button icon="editor:format-indent-increase" editor-command="indent" on-tap="_fireAction" title="Increase indent"></paper-icon-button>
+                |
+                <paper-icon-button icon="editor:format-align-center" editor-command="justifyCenter" on-tap="_fireAction" title="Align centre"></paper-icon-button>
+                <paper-icon-button icon="editor:format-align-justify" editor-command="justifyFull" on-tap="_fireAction" title="Full justify"></paper-icon-button>
+                <paper-icon-button icon="editor:format-align-left" editor-command="justifyLeft" on-tap="_fireAction" title="Align left"></paper-icon-button>
+                <paper-icon-button icon="editor:format-align-right" editor-command="justifyRight" on-tap="_fireAction" title="Align right"></paper-icon-button>
+                |
+                <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="_initColours">
+                    <paper-icon-button icon="editor:format-color-text" slot="dropdown-trigger" editor-command="foreColor" title="Font colour"></paper-icon-button>
+                    <div slot="dropdown-content" class="dropdown-content colour-swatch">
+                        <template is="dom-repeat" items="{{colours}}" as="colour">
+                            <span class="colour" on-tap="_setForeColour">{{colour}}</span>
+                        </template>
+                    </div>
+                </paper-menu-button>
+                <paper-menu-button vertical-align="bottom" horizontal-align="right" on-paper-dropdown-open="_initColours">
+                    <paper-icon-button icon="editor:format-color-fill" slot="dropdown-trigger" editor-command="backColor" title="Background colour"></paper-icon-button>
+                    <div slot="dropdown-content" class="dropdown-content colour-swatch">
+                        <template is="dom-repeat" items="{{colours}}" as="colour">
+                            <span class="colour" on-tap="_setBackColour">{{colour}}</span>
+                        </template>
+                    </div>
+                </paper-menu-button>
+            </slot>
+        </div>
         <div class="underline" focused$=[[focused]]>
             <div class="unfocused-line"></div>
             <div class="focused-line"></div>
@@ -221,6 +233,7 @@
                 }
 
                 // document.activeElement will return the parent light DOM, we want the element in this component
+                // Read more https://medium.com/dev-channel/focus-inside-shadow-dom-78e8a575b73
                 const newFocus = this.shadowRoot.activeElement;
 
                 // If we have a new focus in the same shadow root then we've switched sub-controls, overall focus is still on the component

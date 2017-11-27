@@ -38,9 +38,7 @@ Include the script in your page:
     
 Include the tag in your HTML:
 
-    <sandbox-editor content={{HTML content to edit}}>
-         Custom toolbar buttons here
-    </sandbox-editor>
+    <sandbox-editor content={{HTML content to edit}}></sandbox-editor>
     
 The `content` attribute (it can also be set as a property) holds the HTML to set. `content-changed` fires when the user updates the HTML. This is compatible with [Polymer's `notify` properties](https://www.polymer-project.org/2.0/docs/devguide/properties), so you can use its two-way binding.
 
@@ -51,6 +49,8 @@ To execute commands against the editor call `editorAction`:
     sandbox.editorAction('backColor', '#fdb5fb'); // make the background pink
 
 For an example of this see the [source of `<html-editor>`](html-editor.html)
+
+Finally, `<sandbox-editor>` fires an event when the body inside the editor gains focus. This appears as the `focused` property and fires `focused-changed` when it changes.
 
 ### `<html-editor>`
 
@@ -65,3 +65,11 @@ Include the tag in your HTML:
 The `content` attribute (it can also be set as a property) holds the HTML to set, Polymer two-way databinding is supported.
 
 ![screen shot](demo/html-editor.png)
+
+You can add your own buttons if you want in the `slot`:
+
+    <html-editor content={{HTML content to edit}}>
+        <button on-tap="_actionBold">Maek Kustom Blod!</button>
+    </html-editor>
+
+`<html-editor>` only shows the toolbar while the `<sandbox-editor>` or some other control in the shadow DOM has focus.
