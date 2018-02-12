@@ -144,7 +144,7 @@
 
         <label hidden$="[[!label]]" aria-hidden="true" for="sandbox" slot="label">[[label]]</label>
 
-        <sandbox-editor id="sandbox" content={{value}} slot="input" on-focused-changed="_focusChanged"></sandbox-editor>
+        <sandbox-editor id="sandbox" content={{value}} slot="input" on-focused-changed="_focusChanged" on-content-changed="_contentChanged"></sandbox-editor>
 
         <div id="toolbar" focused$=[[focused]]>
             <slot>
@@ -218,6 +218,10 @@
                     label: String,
                     focused: { type: Boolean, value: false, observer: '_focusChanged' }
                 }
+            }
+
+            _contentChanged(e) {
+                this.dispatchEvent(new CustomEvent('change', { detail: { value: this.value } }));
             }
 
             _focusChanged(e) {

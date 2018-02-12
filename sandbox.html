@@ -42,6 +42,9 @@
             content.addEventListener('input', e => parent.postMessage({ html: content.innerHTML, focus: true }, window.location.origin), false);
             content.addEventListener('focusin', e => parent.postMessage({ focus: true }, window.location.origin), false);
             content.addEventListener('focusout', e => parent.postMessage({ focus: false }, window.location.origin), false);
+
+            // Let the sandbox iframe know we've loaded
+            parent.postMessage({ ready: true }, window.location.origin);
         });
     </script>
 </head>

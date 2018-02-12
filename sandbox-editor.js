@@ -2,17 +2,39 @@ const stack = (new Error().stack || '').split('at');
 const scriptPath = stack[stack.length - 1].trim();
 const componentPath = scriptPath.substring(0, scriptPath.lastIndexOf('/'));
 export class SandboxEditor extends HTMLElement {
+    constructor() {
+        super(...arguments);
+        this.sandboxReady = false;
+        this._hasFocus = false;
+    }
     get content() { return this._content; }
     ;
     set content(c) {
         this._content = c;
-        if (this.editor)
-            this.sendCommand('html', false, this._content);
+        this.setIframeContent();
+    }
+    ;
+    get focused() { return this._hasFocus; }
+    ;
+    set focused(f) {
+        if (this._hasFocus === f)
+            return;
+        this._hasFocus = f;
+        this.dispatchEvent(new CustomEvent('focused-changed', { detail: { value: this._hasFocus } }));
     }
     ;
     static get observedAttributes() { return ['content']; }
     attributeChangedCallback(attr, oldValue, newValue) {
         this[attr] = newValue;
+    }
+    async setIframeContent() {
+        if (!this.editor)
+            return;
+        const c = this._content;
+        while (!this.sandboxReady && c === this._content)
+            await new Promise(requestAnimationFrame);
+        if (c === this._content)
+            this.sendCommand('html', false, this._content);
     }
     sendCommand(command, focus, content) {
         if (!this.editor)
@@ -27,8 +49,14 @@ export class SandboxEditor extends HTMLElement {
     }
     receiveMessage(event) {
         if (this.editor && event.source === this.editor.contentWindow) {
-            this._content = event.data.html;
-            this.dispatchEvent(new CustomEvent('content-changed', { detail: { value: this._content } }));
+            if ('html' in event.data) {
+                this._content = event.data.html;
+                this.dispatchEvent(new CustomEvent('content-changed', { detail: { value: this._content } }));
+            }
+            if ('focus' in event.data)
+                this.focused = event.data.focus;
+            if ('ready' in event.data)
+                this.sandboxReady = event.data.ready;
         }
     }
     connectedCallback() {
@@ -48,30 +76,16 @@ iframe {
     padding: 0; 
     width: 100%; 
     height: 100%; 
-}
-
-#toolbar {
-    position: absolute;
-    bottom: 0;
-    background-color: var(--html-editor-background-colour, #fff);
-    color: var(--html-editor-colour, #000);
-    padding: .5em;
-    box-shadow: rgba(0, 0, 0, 0.14) 0px -2px 2px 0px, rgba(0, 0, 0, 0.12) 0px -1px 5px 0px, rgba(0, 0, 0, 0.2) 0px -3px 1px -2px;
 }`;
         root.appendChild(style);
-        const toolbar = document.createElement('div');
-        toolbar.id = 'toolbar';
-        root.appendChild(toolbar);
-        const slot = document.createElement('slot');
-        toolbar.appendChild(slot);
         this.editor = document.createElement('iframe');
         this.editor.id = 'editor';
         this.editor.setAttribute('src', `${componentPath}/sandbox.html`);
         this.editor.setAttribute('sandbox', 'allow-scripts');
-        root.appendChild(this.editor);
         window.addEventListener('message', e => this.receiveMessage(e), false);
+        root.appendChild(this.editor);
         if (this._content)
-            this.sendCommand('html', false, this._content);
+            this.setIframeContent();
     }
 }
 customElements.define('sandbox-editor', SandboxEditor);

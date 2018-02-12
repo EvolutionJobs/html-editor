@@ -1,4 +1,4 @@
-const stack = (new Error().stack || '').split('at'); // Get the current script path https://stackoverflow.com/questions/47437878/get-the-path-to-the-current-js-web-component
+﻿const stack = (new Error().stack || '').split('at'); // Get the current script path https://stackoverflow.com/questions/47437878/get-the-path-to-the-current-js-web-component
 const scriptPath = stack[stack.length - 1].trim();
 const componentPath = scriptPath.substring(0, scriptPath.lastIndexOf('/'));
 
@@ -20,6 +20,9 @@ export class SandboxEditor extends HTMLElement {
     /** Holds the sandboxed iframe with the editable content. */
     private editor: HTMLIFrameElement;
 
+    /** Holds true once we've received a DOM content loaded event from the iframe conent */
+    private sandboxReady: boolean = false;
+
     /** Holds the content sent to the sandboxed iframe. */
     private _content: string;
 
@@ -29,8 +32,7 @@ export class SandboxEditor extends HTMLElement {
         this._content = c;
 
         // If we have an editor send the command to update the HTML.
-        if (this.editor)
-            this.sendCommand('html', false, this._content);
+        this.setIframeContent();
     };
 
     /** Holds whether the contained iframe has fired a focus event on the contenteditable body. */
@@ -52,6 +54,22 @@ export class SandboxEditor extends HTMLElement {
 
     attributeChangedCallback(attr: string, oldValue: any, newValue: any) {
         (this as any)[attr] = newValue;
+    }
+
+    /** Send the content to the iframe */
+    private async setIframeContent() {
+        // If we don't have an editor then connected callback hasn't happened yet
+        if (!this.editor)
+            return;
+
+        const c = this._content;
+
+        // If the DOM ready hasn't fired yet keep waiting until it is
+        while (!this.sandboxReady && c === this._content)
+            await new Promise(requestAnimationFrame);
+
+        if (c === this._content)
+            this.sendCommand('html', false, this._content);
     }
 
     /** Send a command to the sandboxed iframe.
@@ -93,6 +111,9 @@ export class SandboxEditor extends HTMLElement {
 
             if ('focus' in event.data)
                 this.focused = event.data.focus;
+
+            if ('ready' in event.data)
+                this.sandboxReady = event.data.ready;
         }
     }
 
@@ -124,14 +145,15 @@ iframe {
         // Allow scripts to run in the sandbox (required to consume the posted messages),
         // but DON'T allow-same-origin - malicious scripts can run in the iframe, but can't get out of it.
         this.editor.setAttribute('sandbox', 'allow-scripts');
-        root.appendChild(this.editor);
 
         // Instead listen for window.postMessage from the iframe
         window.addEventListener('message', e => this.receiveMessage(e), false);
 
+        root.appendChild(this.editor);
+
         // If we already have content set it
         if (this._content)
-            this.sendCommand('html', false, this._content);
+            this.setIframeContent();
     }
 }
 
